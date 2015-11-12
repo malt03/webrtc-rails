@@ -8,7 +8,11 @@ module WebrtcRails
       def create_events_initializer_file
         js_path = File.join('app', 'assets', 'javascripts')
         template 'main.js.coffee', File.join(js_path, 'webrtc_rails', 'main.js.coffee')
-        append_to_file File.join(js_path, 'application.js'), '//= require webrtc_rails/main'
+        append_to_file File.join(js_path, 'application.js') do
+          out = ''
+          out << '//= require webrtc_rails/main'
+          out << "\n"
+        end
       end
 
       def create_webrtc_controller

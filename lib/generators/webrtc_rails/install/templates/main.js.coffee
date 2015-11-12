@@ -60,7 +60,7 @@ class @WebRTC
       type: 'POST'
       url: 'webrtc'
       data:
-        id: @remoteUserID
+        user_id: @remoteUserID
         message: message
     )
 
