@@ -5,7 +5,7 @@ require 'webrtc_rails/version'
 
 Gem::Specification.new do |spec|
   spec.name          = "webrtc-rails"
-  spec.version       = Webrtc::Rails::VERSION
+  spec.version       = WebrtcRails::VERSION
   spec.authors       = ["Koji Murata"]
   spec.email         = ["malt.koji@gmail.com"]
 
