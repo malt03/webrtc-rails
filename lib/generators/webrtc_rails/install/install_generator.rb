@@ -10,8 +10,8 @@ module WebrtcRails
         template 'main.js.coffee', File.join(js_path, 'webrtc_rails', 'main.js.coffee')
         append_to_file File.join(js_path, 'application.js') do
           out = ''
-          out << '//= require webrtc_rails/main'
-          out << "\n"
+          out << "\n\n// append by webrtc_rails\n"
+          out << "//= require webrtc_rails/main\n\n"
         end
       end
 
