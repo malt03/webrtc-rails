@@ -1,4 +1,8 @@
 class @WebRTC
+  onConnected: ->
+  onHangedUp: ->
+  onReconnectingStarted: ->
+
   constructor: (userID, @localOutput, @remoteOutput) ->
     @_startOutput(@localOutput.tagName.toUpperCase() == 'VIDEO')
     @wsRails = new WebSocketRails(location.host + "/websocket?webrtc=true&user_identifier=" + userID)
@@ -8,6 +12,13 @@ class @WebRTC
         switch event['type']
           when 'call'
             @remoteUserID = event['remoteUserID']
+          when 'hangUp'
+            @onHangedUp()
+            @_hangedUp = true
+            @_sendMessage(JSON.stringify(type: 'hangUpAnswer'))
+            @_stop()
+          when 'hangUpAnswer'
+            @_stop()
           when 'offer'
             @_onOffer(event)
           when 'answer'
@@ -44,10 +55,13 @@ class @WebRTC
       track.enabled = enabled
 
   hangUp: ->
-    @_stop()
+    @onHangedUp()
+    @_sendMessage(JSON.stringify(type: 'hangUp'))
+    @_hangedUp = true
 
   # private
 
+  _hangedUp: true
   _localStream: null
   _peerConnection: null
   _peerStarted: false
@@ -124,6 +138,15 @@ class @WebRTC
           sdpMid: event.candidate.sdpMid
           candidate: event.candidate.candidate
         )
+
+    peer.oniceconnectionstatechange = (event) =>
+      switch peer.iceConnectionState
+        when 'disconnected'
+          @onReconnectingStarted()
+        when 'connected', 'completed'
+          if @_hangedUp
+            @onConnected()
+          @_hangedUp = false
 
     peer.addStream(@_localStream)
     peer.addEventListener('addstream', onRemoteStreamAdded, false)
