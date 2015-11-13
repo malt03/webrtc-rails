@@ -72,7 +72,7 @@ class @WebRTC
   _sendMessage: (message) ->
     $.ajax(
       type: 'POST'
-      url: 'webrtc'
+      url: '/webrtc'
       data:
         user_id: @remoteUserID
         message: message
@@ -190,6 +190,7 @@ class @WebRTC
     @_peerConnection.setRemoteDescription(new RTCSessionDescription(event))
 
   _stop: ->
+    @_peerConnection.removeStream(@_peerConnection.getRemoteStreams()[0])
     @_peerConnection.close()
     @_peerConnection = null
     @_peerStarted = false
