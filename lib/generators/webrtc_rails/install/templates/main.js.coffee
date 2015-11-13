@@ -176,7 +176,7 @@ class @WebRTC
       return
     @_peerConnection.createAnswer(
       (sessionDescription) =>
-        @_peerConnection.setLocalDescription sessionDescription
+        @_peerConnection.setLocalDescription(sessionDescription)
         @_sendSDP(sessionDescription)
       ->
         console.log('Create Answer failed')
