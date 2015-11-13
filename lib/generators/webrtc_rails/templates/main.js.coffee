@@ -4,6 +4,8 @@ class @WebRTC
   onReconnectingStarted: ->
 
   constructor: (userID, @localOutput, @remoteOutput) ->
+    @localOutput = @localOutput[0] || @localOutput
+    @remoteOutput = @remoteOutput[0] || @remoteOutput
     @_startOutput(@localOutput.tagName.toUpperCase() == 'VIDEO')
     @wsRails = new WebSocketRails(location.host + "/websocket?webrtc=true&user_identifier=" + userID)
     @wsRails.bind("webrtc"
