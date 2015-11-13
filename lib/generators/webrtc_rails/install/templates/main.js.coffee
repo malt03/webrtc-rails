@@ -58,7 +58,7 @@ class @WebRTC
   _sendMessage: (message) ->
     $.ajax(
       type: 'POST'
-      url: 'webrtc'
+      url: '/webrtc'
       data:
         user_id: @remoteUserID
         message: message
