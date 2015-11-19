@@ -14,7 +14,7 @@ module WebrtcRails
 
         script_path = daemons_dir.join('webrtc.rb')
         template 'webrtc.rb', script_path
-        chmod script_path 0755
+        chmod script_path, 0755
 
         ctl_path = daemons_dir.join('webrtc_ctl')
         template "webrtc_ctl", ctl_path
