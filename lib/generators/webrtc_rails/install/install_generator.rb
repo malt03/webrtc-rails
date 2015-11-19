@@ -1,4 +1,5 @@
 require 'rails'
+require 'daemons/rails'
 
 module WebrtcRails
   module Generators
