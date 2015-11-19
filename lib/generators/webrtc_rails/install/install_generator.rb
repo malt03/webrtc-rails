@@ -6,7 +6,7 @@ module WebrtcRails
       source_root File.expand_path("../../templates", __FILE__)
 
       def generate_daemon
-        daemons_dir = Daemons::Rails.configuration.daemons_directory
+        daemons_dir = ::Daemons::Rails.configuration.daemons_directory
         unless File.exists?(Rails.root.join(daemons_dir, 'daemons'))
           copy_file "daemons", daemons_dir.join('daemons')
           chmod daemons_dir.join('daemons'), 0755
