@@ -1,5 +1,4 @@
 require 'rails'
-require 'daemons/rails'
 
 module WebrtcRails
   module Generators
@@ -7,6 +6,9 @@ module WebrtcRails
       source_root File.expand_path("../../templates", __FILE__)
 
       def generate_daemon
+        gem 'daemons-rails'
+        gem 'em-websocket'
+        
         daemons_dir = ::Daemons::Rails.configuration.daemons_directory
         unless File.exists?(Rails.root.join(daemons_dir, 'daemons'))
           copy_file "daemons", daemons_dir.join('daemons')
