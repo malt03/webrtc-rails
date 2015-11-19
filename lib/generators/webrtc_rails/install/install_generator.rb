@@ -9,7 +9,7 @@ module WebrtcRails
       end
 
       def injection
-        generate :webrtc_rails:install
+        generate 'webrtc_rails:install'
       end
     end
   end
