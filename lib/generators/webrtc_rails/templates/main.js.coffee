@@ -17,6 +17,7 @@ class @WebRTC
     @_addNetworkEventListener()
 
   connect: (remoteUserID) ->
+    @_isCaller = true
     @_remoteUserID = remoteUserID
     if !@_peerStarted && @_localStream
       @_sendMessage(
@@ -79,6 +80,7 @@ class @WebRTC
             @onWebSocketConnected()
             @_webSocketConnected = true
         when 'call'
+          @_isCaller = false
           @_remoteUserID = event['remoteUserID']
         when 'hangUp'
           @_hangedUp = true
@@ -96,7 +98,7 @@ class @WebRTC
             @_onCandidate(event)
 
   _addNetworkEventListener: ->
-    window.addEventListener('online', (event) =>
+    window.addEventListener('offline', (event) =>
       @_webSocket.close()
     )
 
@@ -204,10 +206,11 @@ class @WebRTC
 
   _reconnectPeer: ->
     @_stop()
-    if @_webSocket.readyState == WebSocket.OPEN
-      @connect()
-    else
-      @_webRTCRreconnecting = true
+    if @_isCaller
+      if @_webSocket.readyState == WebSocket.OPEN
+        @connect()
+      else
+        @_webRTCRreconnecting = true
 
   _sendOffer: ->
     @_peerConnection = @_prepareNewConnection()
