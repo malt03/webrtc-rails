@@ -9,10 +9,10 @@ class @WebRTC
   onWebRTCReconnected: ->
   onWebRTCHangedUp: ->
 
-  constructor: (url, userToken, @localOutput, @remoteOutput) ->
-    @localOutput = @localOutput[0] || @localOutput
-    @remoteOutput = @remoteOutput[0] || @remoteOutput
-    @_startOutput(@localOutput.tagName.toUpperCase() == 'VIDEO')
+  constructor: (url, userToken, localOutput, remoteOutput) ->
+    @localOutput = if localOutput? then (localOutput[0] || localOutput) else null
+    @remoteOutput = remoteOutput[0] || remoteOutput
+    @_startOutput(@localOutput)
     @_webSocketInitialize(url, userToken)
     @_addNetworkEventListener()
 
@@ -128,15 +128,17 @@ class @WebRTC
       message: message
     )
 
-  _startOutput: (video) ->
+  _startOutput: (localOutput) ->
+    isVideo = (@localOutput? && @localOutput.tagName.toUpperCase() == 'VIDEO')
     navigator.webkitGetUserMedia(
-      video: video
+      video: isVideo
       audio: true
       (stream) =>
         @_localStream = stream
-        @localOutput.src = window.URL.createObjectURL(@_localStream)
-        @localOutput.play()
-        @localOutput.volume = 0
+        if @localOutput?
+          @localOutput.src = window.URL.createObjectURL(@_localStream)
+          @localOutput.play()
+          @localOutput.volume = 0
       (error) =>
         console.error('An error occurred: [CODE ' + error.code + ']')
     )
