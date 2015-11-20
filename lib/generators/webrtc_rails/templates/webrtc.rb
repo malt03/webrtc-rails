@@ -25,7 +25,7 @@ EM.run do
       case data[:event]
       when 'setMyToken'
         token = data[:value][:token]
-        if token
+        if token.present?
           my_user_id = User.fetch_by_token(token).id.to_s
           @websockets[my_user_id] ||= []
           @websockets[my_user_id].push(websocket)
@@ -39,7 +39,7 @@ EM.run do
         user_id = data[:value][:userID]
         type = data[:value][:message][:type]
         allow_types = %w/call hangUp hangUpAnswer offer answer candidate/
-        if @websockets[user_id] && type && allow_types.include?(type)
+        if @websockets[user_id] && type.present? && allow_types.include?(type)
           for ws in @websockets[user_id]
             ws.send JSON.generate(data[:value][:message])
           end
