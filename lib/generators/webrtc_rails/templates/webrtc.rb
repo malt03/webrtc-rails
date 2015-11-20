@@ -22,12 +22,12 @@ EM.run do
 
     websocket.onmessage do |message|
       data = JSON.parse(message, {symbolize_names: true})
-      case data[:event]
-      when 'setMyToken'
-        token = data[:value][:token]
-        if token.present?
-          my_user_id = User.fetch_by_token(token).id.to_s
-          if my_user_id.present?
+      token = data[:token]
+      if token.present?
+        my_user_id = User.fetch_by_token(token).id.to_s
+        if my_user_id.present?
+          case data[:event]
+          when 'setMyToken'
             @websockets[my_user_id] ||= []
             @websockets[my_user_id].push(websocket)
             message = {
@@ -35,19 +35,24 @@ EM.run do
               myUserID: my_user_id
             }
             websocket.send JSON.generate(message)
+          when 'sendMessage'
+            user_id = data[:value][:userID]
+            type = data[:value][:message][:type]
+            allow_types = %w/call hangUp offer answer candidate callFailed webSocketReconnected/
+            if @websockets.key?(user_id) && type.present? && allow_types.include?(type)
+              for ws in @websockets[user_id]
+                message = data[:value][:message]
+                message[:remoteUserID] = my_user_id
+                ws.send JSON.generate(message)
+              end
+            else
+              message = {
+                type: 'callFailed',
+                reason: 0
+              }
+              websocket.send JSON.generate(message)
+            end
           end
-        end
-      when 'sendMessage'
-        user_id = data[:value][:userID]
-        type = data[:value][:message][:type]
-        allow_types = %w/call hangUp offer answer candidate/
-        if @websockets.key?(user_id) && type.present? && allow_types.include?(type)
-          for ws in @websockets[user_id]
-            ws.send JSON.generate(data[:value][:message])
-          end
-        else
-          message = { type: 'callFailed' }
-          websocket.send JSON.generate(message)
         end
       end
     end
