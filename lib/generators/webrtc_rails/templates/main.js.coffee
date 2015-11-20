@@ -1,7 +1,11 @@
 class @WebRTC
-  onConnected: ->
-  onHangedUp: ->
-  onReconnectingStarted: ->
+  onWebSocketConnected: ->
+  onWebSocketReconnectingStarted: ->
+  onWebSocketReConnected: ->
+  onWebRTCConnected: ->
+  onWebRTCReconnectingStarted: ->
+  onWebRTCReconnected: ->
+  onWebRTCHangedUp: ->
 
   constructor: (userToken, @localOutput, @remoteOutput) ->
     @localOutput = @localOutput[0] || @localOutput
@@ -33,7 +37,6 @@ class @WebRTC
       track.enabled = enabled
 
   hangUp: ->
-    @onHangedUp()
     @_sendMessage(type: 'hangUp')
     @_hangedUp = true
 
@@ -58,6 +61,7 @@ class @WebRTC
         @connect(@_remoteUserID)
 
     @_webSocket.onclose = (event) =>
+      @onWebSocketReconnectingStarted()
       @_webSocketInitialize(userToken)
 
     @_webSocket.onmessage = (data) =>
@@ -65,11 +69,14 @@ class @WebRTC
       switch event['type']
         when 'myUserID'
           @_myUserID = event['myUserID']
-          console.log("userID: " + @_myUserID)
+          if @_webSocketConnected
+            @onWebSocketReConnected()
+          else
+            @onWebSocketConnected()
+            @_webSocketConnected = true
         when 'call'
           @_remoteUserID = event['remoteUserID']
         when 'hangUp'
-          @onHangedUp()
           @_hangedUp = true
           @_sendMessage(type: 'hangUpAnswer')
           @_stop()
@@ -85,8 +92,12 @@ class @WebRTC
             @_onCandidate(event)
 
   _addNetworkEventListener: ->
-    window.addEventListener('offline', (event) =>
+    window.addEventListener('online', (event) =>
       @_webSocket.close()
+    )
+    window.addEventListener('online', (event) =>
+      @_webSocket = null
+      @_webSocketInitialize()
     )
 
   _startHeartbeat: ->
@@ -110,7 +121,6 @@ class @WebRTC
       ))
 
   _sendMessage: (message) ->
-    console.log("send: " + message['type'])
     @_sendValue('sendMessage',
       userID: String(@_remoteUserID)
       message: message
@@ -178,11 +188,13 @@ class @WebRTC
     peer.oniceconnectionstatechange = (event) =>
       switch peer.iceConnectionState
         when 'disconnected'
-          @onReconnectingStarted()
           @_reconnectPeer()
+          @onWebRTCReconnectingStarted()
         when 'connected', 'completed'
           if @_hangedUp
-            @onConnected()
+            @onWebRTCConnected()
+          else
+            @onWebRTCReconnected()
           @_hangedUp = false
 
     peer.addStream(@_localStream)
@@ -204,7 +216,7 @@ class @WebRTC
         @_peerConnection.setLocalDescription(sessionDescription)
         @_sendSDP(sessionDescription)
       ->
-        console.log 'Create Offer failed'
+        console.log('Create Offer failed')
       @_mediaConstraints
     )
 
