@@ -7,11 +7,11 @@ class @WebRTC
   onWebRTCReconnected: ->
   onWebRTCHangedUp: ->
 
-  constructor: (userToken, @localOutput, @remoteOutput) ->
+  constructor: (url, userToken, @localOutput, @remoteOutput) ->
     @localOutput = @localOutput[0] || @localOutput
     @remoteOutput = @remoteOutput[0] || @remoteOutput
     @_startOutput(@localOutput.tagName.toUpperCase() == 'VIDEO')
-    @_webSocketInitialize(userToken)
+    @_webSocketInitialize(url, userToken)
     @_addNetworkEventListener()
 
   connect: (remoteUserID) ->
@@ -50,8 +50,8 @@ class @WebRTC
     'OfferToReceiveAudio': true
     'OfferToReceiveVideo': true
 
-  _webSocketInitialize: (userToken) ->
-    @_webSocket = new WebSocket('ws://' + location.host + '/websocket')
+  _webSocketInitialize: (url, userToken) ->
+    @_webSocket = new WebSocket(url)
     @_webSocket.onopen = =>
       @_startHeartbeat()
       @_sendValue('setMyToken',
