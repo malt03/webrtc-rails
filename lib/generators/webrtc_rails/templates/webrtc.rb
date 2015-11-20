@@ -41,10 +41,13 @@ EM.run do
         user_id = data[:value][:userID]
         type = data[:value][:message][:type]
         allow_types = %w/call hangUp hangUpAnswer offer answer candidate/
-        if @websockets[user_id] && type.present? && allow_types.include?(type)
+        if @websockets.key?(user_id) && type.present? && allow_types.include?(type)
           for ws in @websockets[user_id]
             ws.send JSON.generate(data[:value][:message])
           end
+        else
+          message = { type: 'callFailed' }
+          websocket.send JSON.generate(message)
         end
       end
     end

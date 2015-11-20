@@ -8,6 +8,7 @@ class @WebRTC
   onWebRTCReconnectingStarted: ->
   onWebRTCReconnected: ->
   onWebRTCHangedUp: ->
+  onWebRTCConnectFailed: ->
 
   constructor: (url, userToken, localOutput, remoteOutput) ->
     @localOutput = if localOutput? then (localOutput[0] || localOutput) else null
@@ -20,12 +21,23 @@ class @WebRTC
     @_isCaller = true
     @_remoteUserID = remoteUserID
     if !@_peerStarted && @_localStream
+      console.log('call')
       @_sendMessage(
         type: 'call'
         remoteUserID: @myUserID
       )
-      @_sendOffer()
-      @_peerStarted = true
+      @_callAnswerReceived = false
+      window.setTimeout(
+        =>
+          console.log(@_callAnswerReceived)
+          console.log(@_webRTCReconnecting)
+          unless @_callAnswerReceived
+            if @_webRTCReconnecting
+              @connect(remoteUserID)
+            else
+              @onWebRTCConnectFailed()
+        5000
+      )
     else
       alert 'Local stream not running yet - try again.'
 
@@ -62,7 +74,8 @@ class @WebRTC
       @_sendValue('setMyToken',
         token: String(userToken)
       )
-      if @_webRTCRreconnecting
+      if @_wantWebRTCReconnecting
+        @_wantWebRTCReconnecting = false
         @connect(@_remoteUserID)
 
     @_webSocket.onclose = (event) =>
@@ -79,9 +92,16 @@ class @WebRTC
           else
             @onWebSocketConnected()
             @_webSocketConnected = true
+        when 'callFailed'
+          @_callAnswerReceived = true
+          @onWebRTCConnectFailed()
         when 'call'
-          @_isCaller = false
-          @_remoteUserID = event['remoteUserID']
+          console.log('called')
+          unless @_peerStarted
+            @_isCaller = false
+            @_remoteUserID = event['remoteUserID']
+            @_sendOffer()
+            @_peerStarted = true
         when 'hangUp'
           @_hangedUp = true
           @_sendMessage(type: 'hangUpAnswer')
@@ -89,6 +109,8 @@ class @WebRTC
         when 'hangUpAnswer'
           @_stop()
         when 'offer'
+          @_callAnswerReceived = true
+          @_webRTCReconnecting = false
           @_onOffer(event)
         when 'answer'
           if @_peerStarted
@@ -209,10 +231,11 @@ class @WebRTC
   _reconnectPeer: ->
     @_stop()
     if @_isCaller
+      @_webRTCReconnecting = true
       if @_webSocket.readyState == WebSocket.OPEN
-        @connect()
-      else
-        @_webRTCRreconnecting = true
+        @connect(@_remoteUserID)
+      else 
+        @_wantWebRTCReconnecting = true
 
   _sendOffer: ->
     @_peerConnection = @_prepareNewConnection()
