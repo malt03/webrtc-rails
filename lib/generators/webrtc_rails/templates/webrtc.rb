@@ -40,7 +40,7 @@ EM.run do
       when 'sendMessage'
         user_id = data[:value][:userID]
         type = data[:value][:message][:type]
-        allow_types = %w/call hangUp hangUpAnswer offer answer candidate/
+        allow_types = %w/call hangUp offer answer candidate/
         if @websockets.key?(user_id) && type.present? && allow_types.include?(type)
           for ws in @websockets[user_id]
             ws.send JSON.generate(data[:value][:message])

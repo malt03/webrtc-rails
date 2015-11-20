@@ -18,19 +18,22 @@ class @WebRTC
     @_addNetworkEventListener()
 
   connect: (remoteUserID) ->
+    if @_webRTCReconnecting && @_hangedUp
+      @_webRTCReconnecting = false
+      @_sendMessage(type: 'hangUp')
+      return
+
     @_isCaller = true
     @_remoteUserID = remoteUserID
     if !@_peerStarted && @_localStream
-      console.log('call')
       @_sendMessage(
         type: 'call'
         remoteUserID: @myUserID
+        reconnect: @_webRTCReconnecting
       )
       @_callAnswerReceived = false
       window.setTimeout(
         =>
-          console.log(@_callAnswerReceived)
-          console.log(@_webRTCReconnecting)
           unless @_callAnswerReceived
             if @_webRTCReconnecting
               @connect(remoteUserID)
@@ -52,8 +55,8 @@ class @WebRTC
       track.enabled = enabled
 
   hangUp: ->
+    @_hangUp()
     @_sendMessage(type: 'hangUp')
-    @_hangedUp = true
 
   # private
 
@@ -70,6 +73,7 @@ class @WebRTC
     @_userToken = userToken
     @_webSocket = new WebSocket(url)
     @_webSocket.onopen = =>
+      @_isWebSocketReconnectingStarted = false
       @_startHeartbeat()
       @_sendValue('setMyToken',
         token: String(userToken)
@@ -79,7 +83,9 @@ class @WebRTC
         @connect(@_remoteUserID)
 
     @_webSocket.onclose = (event) =>
-      @onWebSocketReconnectingStarted()
+      unless @_isWebSocketReconnectingStarted
+        @_isWebSocketReconnectingStarted = true
+        @onWebSocketReconnectingStarted()
       @_webSocketInitialize(url, userToken)
 
     @_webSocket.onmessage = (data) =>
@@ -96,18 +102,15 @@ class @WebRTC
           @_callAnswerReceived = true
           @onWebRTCConnectFailed()
         when 'call'
-          console.log('called')
-          unless @_peerStarted
+          if @_peerStarted
+          else if event['reconnect'] && @_hangedUp
+          else
             @_isCaller = false
             @_remoteUserID = event['remoteUserID']
             @_sendOffer()
             @_peerStarted = true
         when 'hangUp'
-          @_hangedUp = true
-          @_sendMessage(type: 'hangUpAnswer')
-          @_stop()
-        when 'hangUpAnswer'
-          @_stop()
+          @_hangUp()
         when 'offer'
           @_callAnswerReceived = true
           @_webRTCReconnecting = false
@@ -216,12 +219,16 @@ class @WebRTC
         when 'disconnected'
           @_reconnectPeer()
           @onWebRTCReconnectingStarted()
+        when 'checking'
+          @_checking = true
         when 'connected', 'completed'
-          if @_hangedUp
-            @onWebRTCConnected()
-          else
-            @onWebRTCReconnected()
-          @_hangedUp = false
+          if @_checking
+            @_checking = false
+            if @_hangedUp
+              @onWebRTCConnected()
+              @_hangedUp = false
+            else
+              @onWebRTCReconnected()
 
     peer.addStream(@_localStream)
     peer.addEventListener('addstream', onRemoteStreamAdded, false)
@@ -273,8 +280,14 @@ class @WebRTC
       return
     @_peerConnection.setRemoteDescription(new RTCSessionDescription(event))
 
+  _hangUp: ->
+    @_stop()
+    @_hangedUp = true
+    @onWebRTCHangedUp()
+
   _stop: ->
-    @_peerConnection.removeStream(@_peerConnection.getRemoteStreams()[0])
-    @_peerConnection.close()
-    @_peerConnection = null
+    if @_peerConnection?
+      @_peerConnection.removeStream(@_peerConnection.getRemoteStreams()[0])
+      @_peerConnection.close()
+      @_peerConnection = null
     @_peerStarted = false
