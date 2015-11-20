@@ -27,13 +27,15 @@ EM.run do
         token = data[:value][:token]
         if token.present?
           my_user_id = User.fetch_by_token(token).id.to_s
-          @websockets[my_user_id] ||= []
-          @websockets[my_user_id].push(websocket)
-          message = {
-            type: 'myUserID',
-            myUserID: my_user_id
-          }
-          websocket.send JSON.generate(message)
+          if my_user_id.present?
+            @websockets[my_user_id] ||= []
+            @websockets[my_user_id].push(websocket)
+            message = {
+              type: 'myUserID',
+              myUserID: my_user_id
+            }
+            websocket.send JSON.generate(message)
+          end
         end
       when 'sendMessage'
         user_id = data[:value][:userID]
