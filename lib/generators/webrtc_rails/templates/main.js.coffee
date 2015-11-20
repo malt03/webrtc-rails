@@ -1,4 +1,6 @@
 class @WebRTC
+  myUserID: null
+
   onWebSocketConnected: ->
   onWebSocketReconnectingStarted: ->
   onWebSocketReConnected: ->
@@ -19,7 +21,7 @@ class @WebRTC
     if !@_peerStarted && @_localStream
       @_sendMessage(
         type: 'call'
-        remoteUserID: @_myUserID
+        remoteUserID: @myUserID
       )
       @_sendOffer()
       @_peerStarted = true
@@ -51,6 +53,8 @@ class @WebRTC
     'OfferToReceiveVideo': true
 
   _webSocketInitialize: (url, userToken) ->
+    @_url = url
+    @_userToken = userToken
     @_webSocket = new WebSocket(url)
     @_webSocket.onopen = =>
       @_startHeartbeat()
@@ -62,13 +66,13 @@ class @WebRTC
 
     @_webSocket.onclose = (event) =>
       @onWebSocketReconnectingStarted()
-      @_webSocketInitialize(userToken)
+      @_webSocketInitialize(url, userToken)
 
     @_webSocket.onmessage = (data) =>
       event = JSON.parse(data.data)
       switch event['type']
         when 'myUserID'
-          @_myUserID = event['myUserID']
+          @myUserID = event['myUserID']
           if @_webSocketConnected
             @onWebSocketReConnected()
           else
@@ -94,10 +98,6 @@ class @WebRTC
   _addNetworkEventListener: ->
     window.addEventListener('online', (event) =>
       @_webSocket.close()
-    )
-    window.addEventListener('online', (event) =>
-      @_webSocket = null
-      @_webSocketInitialize()
     )
 
   _startHeartbeat: ->
