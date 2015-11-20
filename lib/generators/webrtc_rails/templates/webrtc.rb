@@ -8,30 +8,39 @@ Dir.chdir(root)
 
 require File.join(root, "config", "environment")
 
-@webSockets = {}
+@websockets = {}
 
 EM.run do
-  EM::WebSocket.run(host: 'localhost', port: 3001) do |webSocket|
-    myIdentifier = nil
+  EM::WebSocket.run(host: 'localhost', port: 3001) do |websocket|
+    my_user_id = nil
     
-    webSocket.onclose do
-      if myIdentifier
-        @webSockets[myIdentifier].delete(webSocket)
+    websocket.onclose do
+      if my_user_id
+        @websockets[my_user_id].delete(websocket)
       end
     end
 
-    webSocket.onmessage do |message|
+    websocket.onmessage do |message|
       data = JSON.parse(message, {symbolize_names: true})
       case data[:event]
-      when 'setMyIdentifier'
-        identifier = data[:value][:identifier]
-        myIdentifier = identifier
-        @webSockets[identifier] ||= []
-        @webSockets[identifier].push(webSocket)
+      when 'setMyToken'
+        token = data[:value][:token]
+        if token
+          my_user_id = User.fetch_by_token(token).id.to_s
+          @websockets[my_user_id] ||= []
+          @websockets[my_user_id].push(websocket)
+          message = {
+            type: 'myUserID',
+            myUserID: my_user_id
+          }
+          websocket.send JSON.generate(message)
+        end
       when 'sendMessage'
-        identifier = data[:value][:identifier]
-        if @webSockets[identifier]
-          for ws in @webSockets[identifier]
+        user_id = data[:value][:userID]
+        type = data[:value][:message][:type]
+        allow_types = %w/call hangUp hangUpAnswer offer answer candidate/
+        if @websockets[user_id] && type && allow_types.include?(type)
+          for ws in @websockets[user_id]
             ws.send JSON.generate(data[:value][:message])
           end
         end

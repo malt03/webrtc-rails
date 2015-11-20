@@ -3,18 +3,19 @@ class @WebRTC
   onHangedUp: ->
   onReconnectingStarted: ->
 
-  constructor: (userIdentifier, @localOutput, @remoteOutput) ->
+  constructor: (userToken, @localOutput, @remoteOutput) ->
     @localOutput = @localOutput[0] || @localOutput
     @remoteOutput = @remoteOutput[0] || @remoteOutput
     @_startOutput(@localOutput.tagName.toUpperCase() == 'VIDEO')
-    @_webSocketInitialize(userIdentifier)
+    @_webSocketInitialize(userToken)
+    @_addNetworkEventListener()
 
-  connect: (myUserID, remoteUserID) ->
-    @remoteUserID = remoteUserID
+  connect: (remoteUserID) ->
+    @_remoteUserID = remoteUserID
     if !@_peerStarted && @_localStream
       @_sendMessage(
         type: 'call'
-        remoteUserID: myUserID
+        remoteUserID: @_myUserID
       )
       @_sendOffer()
       @_peerStarted = true
@@ -46,19 +47,27 @@ class @WebRTC
     'OfferToReceiveAudio': true
     'OfferToReceiveVideo': true
 
-  _webSocketInitialize: (userIdentifier) ->
+  _webSocketInitialize: (userToken) ->
     @_webSocket = new WebSocket('ws://' + location.host + '/websocket')
     @_webSocket.onopen = =>
-      @_heartbeat()
-      @_sendValue('setMyIdentifier',
-        identifier: String(userIdentifier)
+      @_startHeartbeat()
+      @_sendValue('setMyToken',
+        token: String(userToken)
       )
+      if @_webRTCRreconnecting
+        @connect(@_remoteUserID)
+
+    @_webSocket.onclose = (event) =>
+      @_webSocketInitialize(userToken)
 
     @_webSocket.onmessage = (data) =>
       event = JSON.parse(data.data)
       switch event['type']
+        when 'myUserID'
+          @_myUserID = event['myUserID']
+          console.log("userID: " + @_myUserID)
         when 'call'
-          @remoteUserID = event['remoteUserID']
+          @_remoteUserID = event['remoteUserID']
         when 'hangUp'
           @onHangedUp()
           @_hangedUp = true
@@ -74,9 +83,16 @@ class @WebRTC
         when 'candidate'
           if @_peerStarted
             @_onCandidate(event)
-        when 'user disconnected'
-          if @_peerStarted
-            @_stop()
+
+  _addNetworkEventListener: ->
+    window.addEventListener('offline', (event) =>
+      @_webSocket.close()
+    )
+
+  _startHeartbeat: ->
+    if !@_heartbeating
+      @_heartbeating = true
+      @_heartbeat()
 
   _heartbeat: ->
     @_sendValue('heartbeat', null)
@@ -87,14 +103,16 @@ class @WebRTC
     )
 
   _sendValue: (event, value) ->
-    @_webSocket.send(JSON.stringify(
-      event: event
-      value: value
-    ))
+    if @_webSocket.readyState == WebSocket.OPEN
+      @_webSocket.send(JSON.stringify(
+        event: event
+        value: value
+      ))
 
   _sendMessage: (message) ->
+    console.log("send: " + message['type'])
     @_sendValue('sendMessage',
-      identifier: String(@remoteUserID)
+      userID: String(@_remoteUserID)
       message: message
     )
 
@@ -160,8 +178,8 @@ class @WebRTC
     peer.oniceconnectionstatechange = (event) =>
       switch peer.iceConnectionState
         when 'disconnected'
-          console.log(@_wsRails.stale)
           @onReconnectingStarted()
+          @_reconnectPeer()
         when 'connected', 'completed'
           if @_hangedUp
             @onConnected()
@@ -171,6 +189,13 @@ class @WebRTC
     peer.addEventListener('addstream', onRemoteStreamAdded, false)
     peer.addEventListener('removestream', onRemoteStreamRemoved, false)
     peer
+
+  _reconnectPeer: ->
+    @_stop()
+    if @_webSocket.readyState == WebSocket.OPEN
+      @connect()
+    else
+      @_webRTCRreconnecting = true
 
   _sendOffer: ->
     @_peerConnection = @_prepareNewConnection()
