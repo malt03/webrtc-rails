@@ -11,6 +11,24 @@ require File.join(root, "config", "environment")
 @websockets = {}
 
 EM.run do
+  redis = EM::Hiredis.connect
+  pubsub = redis.pubsub
+  pubsub.subscribe('webrtc-rails')
+  pubsub.on(:message) do |channel, message|
+    data = JSON.parse(message, {symbolize_names: true})
+    user_id = data[:user_id].to_s
+    message = data[:message]
+    if @websockets.key?(user_id)
+      for ws in @websockets[user_id]
+        send_data = {
+          type: 'serverMessage',
+          message: message
+        }
+        ws.send JSON.generate(send_data)
+      end
+    end
+  end
+  
   EM::WebSocket.run(host: 'localhost', port: 3001) do |websocket|
     my_user_id = nil
     

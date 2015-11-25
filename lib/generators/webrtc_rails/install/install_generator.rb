@@ -6,6 +6,7 @@ module WebrtcRails
       def add_gems
         gem 'daemons-rails'
         gem 'em-websocket'
+        gem 'em-hiredis'
       end
 
       def injection

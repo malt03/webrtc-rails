@@ -13,6 +13,7 @@ class @WebRTC
   onWebRTCReconnected: ->
   onWebRTCHangedUp: ->
   onWebRTCConnectFailed: (reason) ->
+  onServerMessage: (message) ->
 
   constructor: (url, userToken, localOutput, remoteOutput) ->
     @localOutput = if localOutput? then (localOutput[0] || localOutput) else null
@@ -138,6 +139,8 @@ class @WebRTC
         when 'candidate'
           if @_peerStarted
             @_onCandidate(event)
+        when 'serverMessage'
+          @onServerMessage(event['message'])
 
   _addNetworkEventListener: ->
     window.addEventListener('offline', (event) =>
