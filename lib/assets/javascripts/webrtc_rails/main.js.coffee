@@ -105,10 +105,14 @@ class @WebRTC
     @_webSocket.onmessage = (data) =>
       event = JSON.parse(data.data)
       eventType = event['type']
+      if eventType == 'userMessage'
+        @onUserMessage(event['remoteUserID'], event['event'], event['message'])
+        return
+
       if eventType != 'myUserID' && eventType != 'call' && eventType != 'webSocketReconnected'
         if @_remoteUserID != event['remoteUserID']
           return
-        
+
       switch eventType
         when 'myUserID'
           @myUserID = event['myUserID']
@@ -121,8 +125,6 @@ class @WebRTC
           else
             @onWebSocketConnected()
             @_webSocketConnected = true
-        when 'userMessage'
-          @onUserMessage(event['remoteUserID'], event['event'], event['message'])
         when 'webSocketReconnected'
           if @_hangedUp || @_remoteUserID != event['remoteUserID']
             @_sendMessageToOther(type: 'hangUp', event['remoteUserID'])
