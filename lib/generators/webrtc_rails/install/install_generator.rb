@@ -12,7 +12,7 @@ module WebrtcRails
       end
       
       def injection_js
-        append_to_file File.join(js_path, 'application.js') do
+        append_to_file File.join('app', 'assets', 'javascripts', 'application.js') do
           out = ''
           out << "\n\n// append by webrtc_rails\n"
           out << "//= require app/webrtc_rails/main\n\n"
