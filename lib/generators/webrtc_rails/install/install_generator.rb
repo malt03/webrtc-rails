@@ -15,7 +15,7 @@ module WebrtcRails
         append_to_file File.join('app', 'assets', 'javascripts', 'application.js') do
           out = ''
           out << "\n\n// append by webrtc_rails\n"
-          out << "//= require app/webrtc_rails/main\n\n"
+          out << "//= require webrtc_rails/main\n\n"
         end
       end
     end
