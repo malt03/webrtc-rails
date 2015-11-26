@@ -8,6 +8,7 @@ class @WebRTC
   onWebSocketConnected: ->
   onWebSocketReconnectingStarted: ->
   onWebSocketReconnected: ->
+  onWebRTCCall: (remoteUserID) ->
   onWebRTCConnected: ->
   onWebRTCReconnectingStarted: ->
   onWebRTCReconnected: ->
@@ -48,6 +49,11 @@ class @WebRTC
       )
     else
       alert 'Local stream not running yet - try again.'
+
+  answer: ->
+    @_isCaller = false
+    @_sendOffer()
+    @_peerStarted = true
 
   sendUserMessage: (type, message) ->
     @_sendMessage(
@@ -130,10 +136,8 @@ class @WebRTC
           else if event['reconnect'] && @_hangedUp
             @_sendMessage(type: 'hangUp')
           else
-            @_isCaller = false
             @_remoteUserID = event['remoteUserID']
-            @_sendOffer()
-            @_peerStarted = true
+            @onWebRTCCall(@_remoteUserID)
         when 'hangUp'
           @_callAnswerReceived = true
           @_hangUp()
