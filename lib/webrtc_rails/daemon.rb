@@ -6,7 +6,7 @@ module WebrtcRails
     def initialize
       @websockets = {}
       @config = WebrtcRails.configuration
-      @user_class = @config.user_model_class
+      @user_class = @config.user_model_class.constantize
       @fetch_user_by_token_method = @config.fetch_user_by_token_method
       @user_id = @config.user_id
     end
