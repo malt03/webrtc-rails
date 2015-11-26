@@ -5,6 +5,10 @@ module WebrtcRails
   class Daemon
     def initialize
       @websockets = {}
+      @config = WebrtcRails.configuration
+      @user_class = @config.user_model_class
+      @fetch_user_by_token_method = @config.fetch_user_by_token_method
+      @user_id = @config.user_id
     end
 
     def start
@@ -52,8 +56,8 @@ module WebrtcRails
       if data[:event] != 'heartbeat'
         token = data[:token]
         if token.present?
-          user = User.fetch_by_token(token)
-          my_user_id = user ? user.id.to_s : nil
+          user = @user_class.send(@fetch_user_by_token_method, token)
+          my_user_id = user ? user.send(@user_id).to_s : nil
           if my_user_id.present?
             case data[:event]
             when 'setMyToken'
