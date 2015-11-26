@@ -2,18 +2,12 @@ require 'em-websocket'
 require 'em-hiredis'
 
 module WebrtcRails
-  module Daemon
-    def start
-      ENV["RAILS_ENV"] ||= "production"
-
-      root = File.expand_path(File.dirname(__FILE__))
-      root = File.dirname(root) until File.exists?(File.join(root, 'config'))
-      Dir.chdir(root)
-
-      require File.join(root, "config", "environment")
-
+  class Daemon
+    def initialize
       @websockets = {}
+    end
 
+    def start
       EM.run do
         redis = EM::Hiredis.connect
         pubsub = redis.pubsub
@@ -45,49 +39,53 @@ module WebrtcRails
           end
 
           websocket.onmessage do |message|
-            data = JSON.parse(message, {symbolize_names: true})
-            if data[:event] != 'heartbeat'
-              token = data[:token]
-              if token.present?
-                user = User.fetch_by_token(token)
-                my_user_id = user ? user.id.to_s : nil
-                if my_user_id.present?
-                  case data[:event]
-                  when 'setMyToken'
-                    @websockets[my_user_id] ||= []
-                    @websockets[my_user_id].push(websocket)
-                    message = {
-                      type: 'myUserID',
-                      myUserID: my_user_id
-                    }
-                    websocket.send JSON.generate(message)
-                  when 'sendMessage'
-                    user_id = data[:value][:userID]
-                    type = data[:value][:message][:type]
-                    allow_types = %w/call hangUp offer answer candidate callFailed userMessage webSocketReconnected/
-                    if @websockets.key?(user_id) && type.present? && allow_types.include?(type)
-                      for ws in @websockets[user_id]
-                        message = data[:value][:message]
-                        message[:remoteUserID] = my_user_id
-                        ws.send JSON.generate(message)
-                      end
-                    else
-                      message = {
-                        type: 'callFailed',
-                        reason: 0,
-                        remoteUserID: user_id
-                      }
-                      websocket.send JSON.generate(message)
-                    end
-                  end
+            onmessage(websocket, message)
+          end
+        end
+      end
+    end
+
+    private
+
+    def onmessage(websocket, message)
+      data = JSON.parse(message, {symbolize_names: true})
+      if data[:event] != 'heartbeat'
+        token = data[:token]
+        if token.present?
+          user = User.fetch_by_token(token)
+          my_user_id = user ? user.id.to_s : nil
+          if my_user_id.present?
+            case data[:event]
+            when 'setMyToken'
+              @websockets[my_user_id] ||= []
+              @websockets[my_user_id].push(websocket)
+              message = {
+                type: 'myUserID',
+                myUserID: my_user_id
+              }
+              websocket.send JSON.generate(message)
+            when 'sendMessage'
+              user_id = data[:value][:userID]
+              type = data[:value][:message][:type]
+              allow_types = %w/call hangUp offer answer candidate callFailed userMessage webSocketReconnected/
+              if @websockets.key?(user_id) && type.present? && allow_types.include?(type)
+                for ws in @websockets[user_id]
+                  message = data[:value][:message]
+                  message[:remoteUserID] = my_user_id
+                  ws.send JSON.generate(message)
                 end
+              else
+                message = {
+                  type: 'callFailed',
+                  reason: 0,
+                  remoteUserID: user_id
+                }
+                websocket.send JSON.generate(message)
               end
             end
           end
         end
       end
     end
-
-    module_function :start
   end
 end
