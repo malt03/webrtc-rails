@@ -53,4 +53,20 @@ namespace :webrtc_rails do
       puts 'webrtc daemon does not exist'
     end
   end
+
+  def status
+    unless File.exists?(@pid_file)
+      puts 'webrtc daemon is not running'
+      return
+    end
+
+    pid = File.read(@pid_file)
+    begin
+      if Process.kill(0, pid.to_i)
+        puts 'webrtc daemon is running'
+      end
+    rescue Errno::ESRCH
+      puts 'webrtc daemon is not running'
+    end
+  end
 end
