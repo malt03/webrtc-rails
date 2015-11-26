@@ -1,4 +1,4 @@
-require 'webrtc_rails'
+require 'webrtc-rails'
 
 namespace :webrtc_rails do
   desc 'start webrtc daemon'
