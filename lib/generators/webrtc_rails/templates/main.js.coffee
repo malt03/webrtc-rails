@@ -14,6 +14,7 @@ class @WebRTC
   onWebRTCHangedUp: ->
   onWebRTCConnectFailed: (reason) ->
   onServerMessage: (message) ->
+  onUserMessage: (type, message) ->
 
   constructor: (url, userToken, localOutput, remoteOutput) ->
     @localOutput = if localOutput? then (localOutput[0] || localOutput) else null
@@ -47,6 +48,13 @@ class @WebRTC
       )
     else
       alert 'Local stream not running yet - try again.'
+
+  sendUserMessage: (type, message) ->
+    @_sendMessage(
+      type: 'userMessage'
+      userType: type,
+      message: message
+    )
 
   enableVideo: ->
     @setVideoEnabled(true)
@@ -141,6 +149,8 @@ class @WebRTC
             @_onCandidate(event)
         when 'serverMessage'
           @onServerMessage(event['message'])
+        when 'userMessage'
+          @onUserMessage(event['userType'], event['message'])
 
   _addNetworkEventListener: ->
     window.addEventListener('offline', (event) =>
