@@ -62,12 +62,6 @@ class @WebRTC
       message: message
     )
 
-    @_sendValue(
-      
-      userType: type,
-      message: message
-    )
-
   enableVideo: ->
     @setVideoEnabled(true)
 
