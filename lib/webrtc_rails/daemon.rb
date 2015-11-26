@@ -1,4 +1,4 @@
-require 'webrtc_rails'
+require 'webrtc-rails'
 require 'em-websocket'
 require 'em-hiredis'
 
