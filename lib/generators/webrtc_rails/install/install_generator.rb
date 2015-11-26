@@ -7,7 +7,7 @@ module WebrtcRails
 
       def create_initializer_file
         initializer_path = File.join('config', 'initializers')
-        file_name = webrtc_rails.rb
+        file_name = 'webrtc_rails.rb'
         template file_name, File.join(initializer_path, file_name)
       end
       
