@@ -1,20 +1,25 @@
 require 'webrtc-rails'
 
 namespace :webrtc_rails do
-  desc 'start webrtc daemon'
+  desc 'Start webrtc daemon'
   task start: :environment do
     start
   end
 
-  desc 'stop webrtc daemon'
+  desc 'Stop webrtc daemon'
   task stop: :environment do
     stop
   end
 
-  desc 'restart webrtc daemon'
+  desc 'Restart webrtc daemon'
   task restart: :environment do
     stop
     start
+  end
+
+  desc 'Check the status of webrtc daemon'
+  task status: :environment do
+    status
   end
 
   @pid_file = "#{Rails.root}/tmp/pids/webrtc_rails.pid"
