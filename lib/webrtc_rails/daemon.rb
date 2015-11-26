@@ -1,8 +1,9 @@
+require 'em-websocket'
+require 'em-hiredis'
+
 module WebrtcRails
   module Daemon
     def start
-      Process.daemon
-      
       ENV["RAILS_ENV"] ||= "production"
 
       root = File.expand_path(File.dirname(__FILE__))
@@ -63,7 +64,6 @@ module WebrtcRails
                   when 'sendMessage'
                     user_id = data[:value][:userID]
                     type = data[:value][:message][:type]
-                    Rails.logger.info type
                     allow_types = %w/call hangUp offer answer candidate callFailed userMessage webSocketReconnected/
                     if @websockets.key?(user_id) && type.present? && allow_types.include?(type)
                       for ws in @websockets[user_id]
