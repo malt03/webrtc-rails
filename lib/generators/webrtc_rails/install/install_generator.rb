@@ -3,14 +3,12 @@ require 'rails'
 module WebrtcRails
   module Generators
     class InstallGenerator < Rails::Generators::Base
-      def add_gems
-        gem 'daemons-rails'
-        gem 'em-websocket'
-        gem 'em-hiredis'
-      end
-
-      def injection
-        generate 'webrtc_rails:injection'
+      def injection_js
+        append_to_file File.join(js_path, 'application.js') do
+          out = ''
+          out << "\n\n// append by webrtc_rails\n"
+          out << "//= require webrtc_rails/main\n\n"
+        end
       end
     end
   end
