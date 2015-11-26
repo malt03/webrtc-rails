@@ -15,7 +15,7 @@ class @WebRTC
   onWebRTCHangedUp: ->
   onWebRTCConnectFailed: (reason) ->
   onServerMessage: (message) ->
-  onUserMessage: (type, message) ->
+  onUserMessage: (sentUserID, event, message) ->
 
   constructor: (url, userToken, localOutput, remoteOutput) ->
     @localOutput = if localOutput? then (localOutput[0] || localOutput) else null
@@ -55,9 +55,15 @@ class @WebRTC
     @_sendOffer()
     @_peerStarted = true
 
-  sendUserMessage: (type, message) ->
-    @_sendMessage(
-      type: 'userMessage'
+  sendUserMessage: (userID, event, message) ->
+    @_sendValue('userMessage',
+      userID: String(userID)
+      event: event
+      message: message
+    )
+
+    @_sendValue(
+      
       userType: type,
       message: message
     )
@@ -121,6 +127,8 @@ class @WebRTC
           else
             @onWebSocketConnected()
             @_webSocketConnected = true
+        when 'userMessage'
+          @onUserMessage(event['remoteUserID'], event['event'], event['message'])
         when 'webSocketReconnected'
           if @_hangedUp || @_remoteUserID != event['remoteUserID']
             @_sendMessageToOther(type: 'hangUp', event['remoteUserID'])
