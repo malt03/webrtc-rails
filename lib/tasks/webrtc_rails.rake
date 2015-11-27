@@ -45,6 +45,8 @@ namespace :webrtc_rails do
     FileUtils.mkdir_p(output_dir)
     $stdout.reopen(stdout_file, 'a')
     $stderr.reopen(stderr_file, 'a')
+    $stdout.sync = true
+    $stderr.sync = true
     
     File.write(@pid_file, Process.pid.to_s)
     daemon = WebrtcRails::Daemon.new
