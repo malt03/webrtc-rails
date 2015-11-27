@@ -90,6 +90,10 @@ class @WebRTC
     'OfferToReceiveAudio': true
     'OfferToReceiveVideo': true
 
+  _RTCIceCandidate: window.RTCIceCandidate || window.mozRTCIceCandidate || window.webkitRTCIceCandidate || window.msRTCIceCandidate
+  _RTCSessionDescription: window.RTCSessionDescription || window.mozRTCSessionDescription || window.webkitRTCSessionDescription || window.msRTCSessionDescription
+  _RTCPeerConnection: window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection || window.msRTCPeerConnection
+
   _webSocketInitialize: (url, userToken) ->
     @_userToken = userToken
     @_webSocket = new WebSocket(url)
@@ -201,7 +205,8 @@ class @WebRTC
 
   _startOutput: (localOutput) ->
     isVideo = (@localOutput? && @localOutput.tagName.toUpperCase() == 'VIDEO')
-    navigator.webkitGetUserMedia(
+    navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia
+    navigator.getUserMedia(
       video: isVideo
       audio: true
       (stream) =>
@@ -225,7 +230,7 @@ class @WebRTC
     @_setAnswer(event)
 
   _onCandidate: (event) ->
-    candidate = new RTCIceCandidate(
+    candidate = new @_RTCIceCandidate(
       sdpMLineIndex: event.sdpMLineIndex
       sdpMid: event.sdpMid
       candidate: event.candidate
@@ -239,7 +244,7 @@ class @WebRTC
     @_sendMessage(candidate)
 
   _prepareNewConnection: ->
-    pcConfig = 'iceServers': [ "url": "stun:stun.l.google.com:19302" ]
+    pcConfig = 'iceServers': [ "urls": "stun:stun.l.google.com:19302" ]
     peer = null
 
     onRemoteStreamAdded = (event) =>
@@ -249,7 +254,7 @@ class @WebRTC
       @remoteOutput.src = ''
 
     try
-      peer = new webkitRTCPeerConnection(pcConfig)
+      peer = new @_RTCPeerConnection(pcConfig)
     catch e
       console.log('Failed to create peerConnection, exception: ' + e.message)
 
@@ -307,7 +312,7 @@ class @WebRTC
     if @_peerConnection
       console.error('peerConnection alreay exist!')
     @_peerConnection = @_prepareNewConnection()
-    @_peerConnection.setRemoteDescription(new RTCSessionDescription(event))
+    @_peerConnection.setRemoteDescription(new @_RTCSessionDescription(event))
 
   _sendAnswer: (event) ->
     if !@_peerConnection
@@ -326,7 +331,7 @@ class @WebRTC
     if !@_peerConnection
       console.error('peerConnection NOT exist!')
       return
-    @_peerConnection.setRemoteDescription(new RTCSessionDescription(event))
+    @_peerConnection.setRemoteDescription(new @_RTCSessionDescription(event))
 
   _hangUp: ->
     @_stop()
@@ -335,7 +340,6 @@ class @WebRTC
 
   _stop: ->
     if @_peerConnection?
-      @_peerConnection.removeStream(@_peerConnection.getRemoteStreams()[0])
       @_peerConnection.close()
       @_peerConnection = null
     @_peerStarted = false
