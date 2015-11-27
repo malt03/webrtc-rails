@@ -22,7 +22,7 @@ namespace :webrtc_rails do
     status
   end
 
-  @pid_file = "#{Rails.root}/tmp/pids/webrtc_rails.pid"
+  @pid_file = File.join(Rails.root, %w/tmp pids webrtc_rails.pid/)
   
   def start
     if File.exists?(@pid_file)
@@ -36,7 +36,16 @@ namespace :webrtc_rails do
       end
     end
     puts 'webrtc daemon started'
-    Process.daemon
+    Process.daemon(true, true)
+
+    output_dir = WebrtcRails.configuration.output_dir
+    stdout_file = File.join(output_dir, 'stdout')
+    stderr_file = File.join(output_dir, 'stderr')
+
+    FileUtils.mkdir_p(output_dir)
+    $stdout.reopen(stdout_file)
+    $stderr.reopen(stderr_file)
+    
     File.write(@pid_file, Process.pid.to_s)
     daemon = WebrtcRails::Daemon.new
     daemon.start
