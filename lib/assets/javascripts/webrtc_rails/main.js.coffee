@@ -42,7 +42,7 @@ class @WebRTC
         =>
           unless @_callAnswerReceived
             if @_webRTCReconnecting
-              @connect(remoteUserIdentifier)
+              @call(remoteUserIdentifier)
             else
               @onWebRTCConnectFailed(WebRTC.TIMEOUT)
         5000
@@ -98,7 +98,7 @@ class @WebRTC
       @_sendValue('setMyToken')
       if @_wantWebRTCReconnecting
         @_wantWebRTCReconnecting = false
-        @connect(@_remoteUserIdentifier)
+        @call(@_remoteUserIdentifier)
 
     @_webSocket.onclose = (event) =>
       unless @_isWebSocketReconnectingStarted
@@ -288,7 +288,7 @@ class @WebRTC
     if @_isCaller
       @_webRTCReconnecting = true
       if @_webSocket.readyState == WebSocket.OPEN
-        @connect(@_remoteUserIdentifier)
+        @call(@_remoteUserIdentifier)
       else 
         @_wantWebRTCReconnecting = true
 
