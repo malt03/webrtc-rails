@@ -3,19 +3,19 @@ class @WebRTC
   @TIMEOUT: 1
   @CALLING: 2
 
-  myUserID: null
+  myUserIdentifier: null
 
   onWebSocketConnected: ->
   onWebSocketReconnectingStarted: ->
   onWebSocketReconnected: ->
-  onWebRTCCall: (remoteUserID) ->
+  onWebRTCCall: (remoteUserIdentifier) ->
   onWebRTCConnected: ->
   onWebRTCReconnectingStarted: ->
   onWebRTCReconnected: ->
   onWebRTCHangedUp: ->
   onWebRTCConnectFailed: (reason) ->
   onServerMessage: (message) ->
-  onUserMessage: (sentUserID, event, message) ->
+  onUserMessage: (sentUserIdentifier, event, message) ->
 
   constructor: (url, userToken, localOutput, remoteOutput) ->
     @localOutput = if localOutput? then (localOutput[0] || localOutput) else null
@@ -24,17 +24,17 @@ class @WebRTC
     @_webSocketInitialize(url, userToken)
     @_addNetworkEventListener()
 
-  connect: (remoteUserID) ->
+  call: (remoteUserIdentifier) ->
     if @_webRTCReconnecting && @_hangedUp
       @_webRTCReconnecting = false
       return
 
     @_isCaller = true
-    @_remoteUserID = remoteUserID
+    @_remoteUserIdentifier = remoteUserIdentifier
     if !@_peerStarted && @_localStream
       @_sendMessage(
         type: 'call'
-        remoteUserID: @myUserID
+        remoteUserIdentifier: @myUserIdentifier
         reconnect: @_webRTCReconnecting
       )
       @_callAnswerReceived = false
@@ -42,7 +42,7 @@ class @WebRTC
         =>
           unless @_callAnswerReceived
             if @_webRTCReconnecting
-              @connect(remoteUserID)
+              @connect(remoteUserIdentifier)
             else
               @onWebRTCConnectFailed(WebRTC.TIMEOUT)
         5000
@@ -55,9 +55,9 @@ class @WebRTC
     @_sendOffer()
     @_peerStarted = true
 
-  sendUserMessage: (userID, event, message) ->
+  sendUserMessage: (userIdentifier, event, message) ->
     @_sendValue('userMessage',
-      userID: String(userID)
+      userIdentifier: String(userIdentifier)
       event: event
       message: message
     )
@@ -94,7 +94,7 @@ class @WebRTC
       @_sendValue('setMyToken')
       if @_wantWebRTCReconnecting
         @_wantWebRTCReconnecting = false
-        @connect(@_remoteUserID)
+        @connect(@_remoteUserIdentifier)
 
     @_webSocket.onclose = (event) =>
       unless @_isWebSocketReconnectingStarted
@@ -106,16 +106,16 @@ class @WebRTC
       event = JSON.parse(data.data)
       eventType = event['type']
       if eventType == 'userMessage'
-        @onUserMessage(event['remoteUserID'], event['event'], event['message'])
+        @onUserMessage(event['remoteUserIdentifier'], event['event'], event['message'])
         return
 
-      if eventType != 'myUserID' && eventType != 'call' && eventType != 'webSocketReconnected'
-        if @_remoteUserID != event['remoteUserID']
+      if eventType != 'myUserIdentifier' && eventType != 'call' && eventType != 'webSocketReconnected'
+        if @_remoteUserIdentifier != event['remoteUserIdentifier']
           return
 
       switch eventType
-        when 'myUserID'
-          @myUserID = event['myUserID']
+        when 'myUserIdentifier'
+          @myUserIdentifier = event['myUserIdentifier']
           if @_webSocketConnected
             @onWebSocketReconnected()
             if @_hangedUp
@@ -126,8 +126,8 @@ class @WebRTC
             @onWebSocketConnected()
             @_webSocketConnected = true
         when 'webSocketReconnected'
-          if @_hangedUp || @_remoteUserID != event['remoteUserID']
-            @_sendMessageToOther(type: 'hangUp', event['remoteUserID'])
+          if @_hangedUp || @_remoteUserIdentifier != event['remoteUserIdentifier']
+            @_sendMessageToOther(type: 'hangUp', event['remoteUserIdentifier'])
         when 'callFailed'
           @_callAnswerReceived = true
           @onWebRTCConnectFailed(event['reason'] || WebRTC.UNKNOWN)
@@ -136,12 +136,12 @@ class @WebRTC
             message =
               type: 'callFailed'
               reason: WebRTC.CALLING
-            @_sendMessageToOther(message, event['remoteUserID'])
+            @_sendMessageToOther(message, event['remoteUserIdentifier'])
           else if event['reconnect'] && @_hangedUp
             @_sendMessage(type: 'hangUp')
           else
-            @_remoteUserID = event['remoteUserID']
-            @onWebRTCCall(@_remoteUserID)
+            @_remoteUserIdentifier = event['remoteUserIdentifier']
+            @onWebRTCCall(@_remoteUserIdentifier)
         when 'hangUp'
           @_callAnswerReceived = true
           @_hangUp()
@@ -186,14 +186,14 @@ class @WebRTC
         value: value
       ))
 
-  _sendMessageToOther: (message, userID) ->
+  _sendMessageToOther: (message, userIdentifier) ->
     @_sendValue('sendMessage',
-      userID: String(userID)
+      userIdentifier: String(userIdentifier)
       message: message
     )
     
   _sendMessage: (message) ->
-    @_sendMessageToOther(message, @_remoteUserID)
+    @_sendMessageToOther(message, @_remoteUserIdentifier)
 
   _startOutput: (localOutput) ->
     isVideo = (@localOutput? && @localOutput.tagName.toUpperCase() == 'VIDEO')
@@ -282,7 +282,7 @@ class @WebRTC
     if @_isCaller
       @_webRTCReconnecting = true
       if @_webSocket.readyState == WebSocket.OPEN
-        @connect(@_remoteUserID)
+        @connect(@_remoteUserIdentifier)
       else 
         @_wantWebRTCReconnecting = true
 

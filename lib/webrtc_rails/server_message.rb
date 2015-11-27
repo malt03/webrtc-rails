@@ -3,9 +3,9 @@ require 'json'
 
 module WebrtcRails
   module ServerMessage
-    def send(user_id, message)
+    def send(user_identifier, message)
       data = {
-        user_id: user_id,
+        user_identifier: user_identifier,
         message: message,
       }
       redis = Redis.new
