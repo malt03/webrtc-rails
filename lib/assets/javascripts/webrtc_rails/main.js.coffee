@@ -69,6 +69,10 @@ class @WebRTC
     @setVideoEnabled(false)
 
   setVideoEnabled: (enabled) ->
+    unless @_localStream?
+      @_wantSetVideoEnabled = true
+      @_videoEnabled = enabled
+      return
     for track in @_localStream.getVideoTracks()
       track.enabled = enabled
 
@@ -206,6 +210,8 @@ class @WebRTC
           @localOutput.src = window.URL.createObjectURL(@_localStream)
           @localOutput.play()
           @localOutput.volume = 0
+          if @_wantSetVideoEnabled
+            @setVideoEnabled(@_videoEnabled)
       (error) =>
         console.error('An error occurred: [CODE ' + error.code + ']')
     )
