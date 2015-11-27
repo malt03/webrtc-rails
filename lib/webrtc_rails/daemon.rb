@@ -106,6 +106,9 @@ module WebrtcRails
     private
 
     def sendMessage(user_identifier, message)
+      unless @websockets.key?(user_identifier)
+        return
+      end
       for ws in @websockets[user_identifier]
         ws.send JSON.generate(message)
       end
