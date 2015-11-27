@@ -14,7 +14,13 @@ module WebrtcRails
     end
 
     def start
+      puts "#{Time.now} daemon started"
       EM.run do
+        trap(:INT) do
+          EM.stop
+          puts "#{Time.now} daemon stoped"
+        end
+
         redis = EM::Hiredis.connect
         pubsub = redis.pubsub
         pubsub.subscribe('webrtc-rails')
