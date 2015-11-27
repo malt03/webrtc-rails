@@ -56,7 +56,7 @@ module WebrtcRails
             if data[:event] != 'heartbeat'
               token = data[:token]
               if token.present?
-                user = @user_class.send(@fetch_user_by_token_method, token)
+                user = @user_class.send(@fetch_user_by_token_method, token.to_s)
                 my_user_identifier = user ? user.send(@user_identifier).to_s : nil
                 if my_user_identifier.present?
                   case data[:event]
