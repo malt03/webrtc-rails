@@ -14,11 +14,11 @@ module WebrtcRails
     end
 
     def start
-      puts "#{Time.now} daemon started"
+      puts "[#{Time.now}] daemon started"
       EM.run do
         trap(:INT) do
           EM.stop
-          puts "#{Time.now} daemon stoped"
+          puts "[#{Time.now}] daemon stoped"
         end
 
         redis = EM::Hiredis.connect
