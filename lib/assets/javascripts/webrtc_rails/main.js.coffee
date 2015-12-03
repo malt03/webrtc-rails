@@ -24,6 +24,13 @@ class @WebRTC
     @_webSocketInitialize(url, userToken)
     @_addNetworkEventListener()
 
+    window.onbeforeunload = (e) =>
+      if @_hangedUp then null else '通話が切断されます。'
+
+    window.onunload = (e) =>
+      unless @_hangedUp
+        @hangUp()
+
   call: (remoteUserIdentifier) ->
     if @_webRTCReconnecting && @_hangedUp
       @_webRTCReconnecting = false
