@@ -27,7 +27,10 @@ class @WebRTC
     window.onbeforeunload = (e) =>
       if @_hangedUp then null else '通話が切断されます。'
 
+    onunload = window.onunload
     window.onunload = (e) =>
+      if onunload?
+         onunload()
       unless @_hangedUp
         @hangUp()
 
