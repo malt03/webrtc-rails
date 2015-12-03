@@ -87,6 +87,20 @@ class @WebRTC
     for track in @_localStream.getVideoTracks()
       track.enabled = enabled
 
+  enableAudio: ->
+    @setAudioEnabled(true)
+
+  disableAudio: ->
+    @setAudioEnabled(false)
+
+  setAudioEnabled: (enabled) ->
+    unless @_localStream?
+      @_wantSetAudioEnabled = true
+      @_audioEnabled = enabled
+      return
+    for track in @_localStream.getAudioTracks()
+      track.enabled = enabled
+
   hangUp: ->
     @_hangUp()
     @_sendMessage(type: 'hangUp')
@@ -228,6 +242,8 @@ class @WebRTC
           @localOutput.volume = 0
           if @_wantSetVideoEnabled
             @setVideoEnabled(@_videoEnabled)
+          if @_wantSetAudioEnabled
+            @setAudioEnabled(@_audioEnabled)
       (error) =>
         console.error('An error occurred: [CODE ' + error.code + ']')
     )
