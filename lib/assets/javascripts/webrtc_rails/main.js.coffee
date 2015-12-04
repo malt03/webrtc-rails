@@ -106,6 +106,10 @@ class @WebRTC
     @_hangUp()
     @_sendMessage(type: 'hangUp')
 
+  readyState: ->
+    unless @_webSocket?
+      return WebSocket.CLOSED
+    return @_webSocket.readyState
   # private
 
   _hangedUp: true
