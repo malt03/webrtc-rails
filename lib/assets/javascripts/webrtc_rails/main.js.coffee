@@ -103,8 +103,8 @@ class @WebRTC
       track.enabled = enabled
 
   hangUp: ->
-    @_hangUp()
     @_sendMessage(type: 'hangUp')
+    @_hangUp()
 
   readyState: ->
     unless @_webSocket?
@@ -371,6 +371,7 @@ class @WebRTC
     @_stop()
     @_hangedUp = true
     @onWebRTCHangedUp()
+    @remoteUserIdentifier = null
 
   _stop: ->
     if @_peerConnection?
