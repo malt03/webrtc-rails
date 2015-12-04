@@ -281,12 +281,6 @@ class @WebRTC
     pcConfig = 'iceServers': [ "urls": "stun:stun.l.google.com:19302" ]
     peer = null
 
-    onRemoteStreamAdded = (event) =>
-      @remoteOutput.src = window.URL.createObjectURL(event.stream)
-
-    onRemoteStreamRemoved = (event) =>
-      @remoteOutput.src = ''
-
     try
       peer = new @_RTCPeerConnection(pcConfig)
     catch e
@@ -318,8 +312,9 @@ class @WebRTC
               @onWebRTCReconnected()
 
     peer.addStream(@_localStream)
-    peer.addEventListener('addstream', onRemoteStreamAdded, false)
-    peer.addEventListener('removestream', onRemoteStreamRemoved, false)
+    peer.onaddstream = (obj) =>
+      @remoteOutput.src = window.URL.createObjectURL(event.stream)
+
     peer
 
   _reconnectPeer: ->
@@ -372,6 +367,7 @@ class @WebRTC
     @_hangedUp = true
     @onWebRTCHangedUp()
     @remoteUserIdentifier = null
+    @remoteOutput.src = ''
 
   _stop: ->
     if @_peerConnection?
