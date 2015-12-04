@@ -17,6 +17,7 @@ class @WebRTC
   onWebRTCConnectFailed: (reason) ->
   onServerMessage: (message) ->
   onUserMessage: (sentUserIdentifier, event, message) ->
+  onSendUserMessageFailed: (sendUserIdentifier, event, message) ->
 
   constructor: (url, userToken, localOutput, remoteOutput) ->
     @localOutput = if localOutput? then (localOutput[0] || localOutput) else null
@@ -138,15 +139,17 @@ class @WebRTC
     @_webSocket.onmessage = (data) =>
       event = JSON.parse(data.data)
       eventType = event['type']
-      if eventType == 'userMessage'
-        @onUserMessage(event['remoteUserIdentifier'], event['event'], event['message'])
-        return
 
-      if eventType != 'myUserIdentifier' && eventType != 'call' && eventType != 'webSocketReconnected'
+      dontNeedRemoteUserCheckType = ['userMessage', 'userMessageFailed', 'myUserIdentifier', 'call', 'webSocketReconnected']
+      if dontNeedRemoteUserCheckType.indexOf(eventType) == -1
         if @remoteUserIdentifier != event['remoteUserIdentifier']
           return
 
       switch eventType
+        when 'userMessage'
+          @onUserMessage(event['remoteUserIdentifier'], event['event'], event['message'])
+        when 'userMessageFailed'
+          @onSendUserMessageFailed(event['remoteUserIdentifier'], event['event'], event['message'])
         when 'myUserIdentifier'
           @myUserIdentifier = event['myUserIdentifier']
           if @_webSocketConnected

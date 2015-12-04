@@ -70,7 +70,10 @@ module WebrtcRails
                   event: event,
                   message: message
                 }
-                sendMessage(user_identifier, message)
+                sendMessage(user_identifier, message) do
+                  message[:type] = 'userMessageFailed'
+                  sendMessage(my_user_identifier, message)
+                end
               end
             when 'setMyToken'
               @websockets[my_user_identifier] ||= []
@@ -108,7 +111,10 @@ module WebrtcRails
     private
 
     def sendMessage(user_identifier, message)
-      return unless @websockets.key?(user_identifier)
+      unless @websockets.key?(user_identifier)
+        yield if block_given?
+        return
+      end
       for ws in @websockets[user_identifier]
         ws.send JSON.generate(message)
       end
