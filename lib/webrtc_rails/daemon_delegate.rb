@@ -1,5 +1,9 @@
 module WebrtcRails
   class DaemonDelegate
+    def onWebSocketHeartbeated(user_identifier, user_info)
+
+    end
+
     def onWebSocketConnected(user_identifier)
 
     end

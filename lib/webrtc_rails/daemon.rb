@@ -51,23 +51,26 @@ module WebrtcRails
 
           websocket.onmessage do |message|
             data = JSON.parse(message, {symbolize_names: true})
-            next if data[:event] == 'heartbeat'
             token = data[:token]
             next if token.blank?
             user = @user_class.send(@fetch_user_by_token_method, token.to_s)
             my_user_identifier = user ? user.send(@user_identifier).to_s : nil
-            next if my_user_identifier.blank?
+            event = data[:event]
+            next if my_user_identifier.blank? && event != 'heartbeat'
 
-            case data[:event]
+            case event
+            when 'heartbeat'
+              user_info = data[:value][:userInfo]
+              @daemon_delegate.onWebSocketHeartbeated(my_user_identifier, user_info)
             when 'userMessage'
               user_identifier = data[:value][:userIdentifier]
-              event = data[:value][:event]
+              event_value = data[:value][:event]
               message = data[:value][:message]
-              if @daemon_delegate.onWantSendUserMessage(my_user_identifier, user_identifier, event, message)
+              if @daemon_delegate.onWantSendUserMessage(my_user_identifier, user_identifier, event_value, message)
                 message = {
                   type: 'userMessage',
                   remoteUserIdentifier: my_user_identifier,
-                  event: event,
+                  event: event_value,
                   message: message
                 }
                 sendMessage(user_identifier, message) do

@@ -1,3 +1,7 @@
+class @WebRTCHeartbeatUserInfo
+  value: 0
+  getValue: -> JSON.stringify(@value)
+
 class @WebRTC
   @DISCONNECTED: 0
   @TIMEOUT: 1
@@ -18,6 +22,8 @@ class @WebRTC
   onServerMessage: (message) ->
   onUserMessage: (sentUserIdentifier, event, message) ->
   onSendUserMessageFailed: (sendUserIdentifier, event, message) ->
+
+  heartbeatUserInfo: new WebRTCHeartbeatUserInfo
 
   constructor: (url, userToken, localOutput, remoteOutput) ->
     @localOutput = if localOutput? then (localOutput[0] || localOutput) else null
@@ -211,7 +217,9 @@ class @WebRTC
       @_heartbeat()
 
   _heartbeat: ->
-    @_sendValue('heartbeat', null)
+    @_sendValue('heartbeat',
+      userInfo: @heartbeatUserInfo.getValue()
+    )
     window.setTimeout(
       =>
         @_heartbeat()
