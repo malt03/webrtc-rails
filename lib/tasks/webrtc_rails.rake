@@ -36,7 +36,9 @@ namespace :webrtc_rails do
       end
     end
     puts 'webrtc daemon started'
-    Process.daemon(true, true)
+    if ENV['WEBRTC_DAEMON'] != 'false'
+      Process.daemon(true, true)
+    end
 
     output_dir = WebrtcRails.configuration.output_dir
     stdout_file = File.join(output_dir, 'stdout')
