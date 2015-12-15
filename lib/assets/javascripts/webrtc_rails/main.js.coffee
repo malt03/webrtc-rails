@@ -320,7 +320,7 @@ class @WebRTC
               @onWebRTCReconnected()
 
     peer.addStream(@_localStream)
-    peer.onaddstream = (obj) =>
+    peer.onaddstream = (event) =>
       @remoteOutput.src = window.URL.createObjectURL(event.stream)
 
     peer
