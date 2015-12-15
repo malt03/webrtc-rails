@@ -50,61 +50,65 @@ module WebrtcRails
           end
 
           websocket.onmessage do |message|
-            data = JSON.parse(message, {symbolize_names: true})
-            token = data[:token]
-            next if token.blank?
-            user = @user_class.send(@fetch_user_by_token_method, token.to_s)
-            my_user_identifier = user ? user.send(@user_identifier).to_s : nil
-            event = data[:event]
-            next if my_user_identifier.blank? && event != 'heartbeat'
+            begin
+              data = JSON.parse(message, {symbolize_names: true})
+              token = data[:token]
+              next if token.blank?
+              user = @user_class.send(@fetch_user_by_token_method, token.to_s)
+              my_user_identifier = user ? user.send(@user_identifier).to_s : nil
+              event = data[:event]
+              next if my_user_identifier.blank? && event != 'heartbeat'
 
-            case event
-            when 'heartbeat'
-              user_info = data[:value][:userInfo]
-              @daemon_delegate.onWebSocketHeartbeated(my_user_identifier, user_info)
-            when 'userMessage'
-              user_identifier = data[:value][:userIdentifier]
-              event_value = data[:value][:event]
-              message = data[:value][:message]
-              if @daemon_delegate.onWantSendUserMessage(my_user_identifier, user_identifier, event_value, message)
-                message = {
-                  type: 'userMessage',
-                  remoteUserIdentifier: my_user_identifier,
-                  event: event_value,
-                  message: message
-                }
-                sendMessage(user_identifier, message) do
-                  message[:type] = 'userMessageFailed'
-                  sendMessage(my_user_identifier, message)
+              case event
+              when 'heartbeat'
+                user_info = data[:value][:userInfo]
+                @daemon_delegate.onWebSocketHeartbeated(my_user_identifier, user_info)
+              when 'userMessage'
+                user_identifier = data[:value][:userIdentifier]
+                event_value = data[:value][:event]
+                message = data[:value][:message]
+                if @daemon_delegate.onWantSendUserMessage(my_user_identifier, user_identifier, event_value, message)
+                  message = {
+                    type: 'userMessage',
+                    remoteUserIdentifier: my_user_identifier,
+                    event: event_value,
+                    message: message
+                  }
+                  sendMessage(user_identifier, message) do
+                    message[:type] = 'userMessageFailed'
+                    sendMessage(my_user_identifier, message)
+                  end
                 end
-              end
-            when 'setMyToken'
-              @websockets[my_user_identifier] ||= []
-              @websockets[my_user_identifier].push(websocket)
-              message = {
-                type: 'myUserIdentifier',
-                myUserIdentifier: my_user_identifier
-              }
-              @daemon_delegate.onWebSocketConnected(my_user_identifier)
-              websocket.send JSON.generate(message)
-            when 'sendMessage'
-              user_identifier = data[:value][:userIdentifier]
-              type = data[:value][:message][:type]
-              allow_types = %w/call hangUp offer answer candidate callFailed userMessage webSocketReconnected/
-              if @websockets.key?(user_identifier) && type.present? && allow_types.include?(type)
-                if type != 'call' || @daemon_delegate.onWantCall(my_user_identifier, user_identifier)
-                  message = data[:value][:message]
-                  message[:remoteUserIdentifier] = my_user_identifier
-                  sendMessage(user_identifier, message)
-                end
-              else
+              when 'setMyToken'
+                @websockets[my_user_identifier] ||= []
+                @websockets[my_user_identifier].push(websocket)
                 message = {
-                  type: 'callFailed',
-                  reason: 0,
-                  remoteUserIdentifier: user_identifier
+                  type: 'myUserIdentifier',
+                  myUserIdentifier: my_user_identifier
                 }
+                @daemon_delegate.onWebSocketConnected(my_user_identifier)
                 websocket.send JSON.generate(message)
+              when 'sendMessage'
+                user_identifier = data[:value][:userIdentifier]
+                type = data[:value][:message][:type]
+                allow_types = %w/call hangUp offer answer candidate callFailed userMessage webSocketReconnected/
+                if @websockets.key?(user_identifier) && type.present? && allow_types.include?(type)
+                  if type != 'call' || @daemon_delegate.onWantCall(my_user_identifier, user_identifier)
+                    message = data[:value][:message]
+                    message[:remoteUserIdentifier] = my_user_identifier
+                    sendMessage(user_identifier, message)
+                  end
+                else
+                  message = {
+                    type: 'callFailed',
+                    reason: 0,
+                    remoteUserIdentifier: user_identifier
+                  }
+                  websocket.send JSON.generate(message)
+                end
               end
+            rescue => e
+              p e
             end
           end
         end
