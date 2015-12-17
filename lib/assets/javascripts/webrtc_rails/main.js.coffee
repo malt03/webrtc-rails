@@ -150,7 +150,7 @@ class @WebRTC
       event = JSON.parse(data.data)
       eventType = event['type']
 
-      dontNeedRemoteUserCheckType = ['userMessage', 'userMessageFailed', 'myUserIdentifier', 'call', 'webSocketReconnected']
+      dontNeedRemoteUserCheckType = ['userMessage', 'userMessageFailed', 'myUserIdentifier', 'call', 'webSocketReconnected', 'serverMessage']
       if dontNeedRemoteUserCheckType.indexOf(eventType) == -1
         if @remoteUserIdentifier != event['remoteUserIdentifier']
           return
